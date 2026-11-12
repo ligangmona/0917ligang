@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DINO EVOLUTION・進化小恐龍</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#091713;color:#ecfff5;font-family:system-ui,"Microsoft JhengHei",sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px}main{width:min(1040px,100%)}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}.tag{color:#a5ef80;letter-spacing:4px;font-size:12px}h1{font-size:clamp(28px,5vw,52px);margin:8px 0}p{color:#9db6aa;line-height:1.8}.record{border:1px solid #385347;border-radius:16px;padding:16px;white-space:nowrap}.record strong{display:block;font-size:26px;color:#c3f59e}.game{position:relative;border:1px solid #3c5c4c;border-radius:22px;overflow:hidden;background:#132d24;box-shadow:0 24px 80px #0005}canvas{width:100%;display:block;aspect-ratio:960/420;touch-action:none}.hud{position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;font-weight:700;font-size:14px}.overlay{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#081a13c9;padding:20px}.overlay h2{font-size:clamp(24px,5vw,40px);margin:0 0 8px}.overlay p{margin:4px 0 20px}.hidden{display:none}button{cursor:pointer;color:#0b2517;background:#c0f28e;border:0;border-radius:12px;padding:13px 22px;font:700 15px system-ui;touch-action:manipulation}button:hover{background:#d6ffb0}button:focus-visible{outline:3px solid white;outline-offset:3px}.controls{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}.secondary{background:#20392e;color:#e2f5e9;border:1px solid #3b594a}.instructions{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:28px}.instructions article{border-top:1px solid #375043;padding-top:16px}.instructions b{color:#d4edbf}.instructions p{font-size:14px;margin-top:6px}footer{font-size:12px;color:#769585;margin-top:24px}@media(max-width:600px){body{padding:14px}header{align-items:flex-start}.record{font-size:11px;padding:10px}.record strong{font-size:20px}.hud{font-size:11px;top:10px;left:12px;right:12px}.instructions{grid-template-columns:1fr;gap:8px}canvas{aspect-ratio:960/540}}
+</style>
+</head>
+<body><main>
+<header><div><span class="tag">THE NEXT LITTLE ADVENTURE</span><h1>進化吧，小恐龍。</h1><p style="margin:0">跨越荒野，收集能量，把紀錄留在身後。</p></div><div class="record">個人最佳<strong id="best">0</strong></div></header>
+<section class="game" aria-label="小恐龍跑酷遊戲">
+<canvas id="game" width="960" height="420" aria-label="使用空白鍵跳躍、向下鍵蹲下，或使用下方觸控按鈕">你的瀏覽器需要支援 Canvas。</canvas>
+<div class="hud"><span id="score">距離 0 m</span><span id="status">幼龍 · 金幣 0 · 護盾 0</span></div>
+<div id="overlay" class="overlay"><h2 id="title">小小一步，進化開始。</h2><p id="message">二段跳 × 護盾 × 無限荒野<br>按空白鍵或點擊開始</p><button id="start">開始冒險 →</button></div>
+</section>
+<div class="controls"><button id="jump">↑ 跳躍 / 二段跳</button><button id="duck" class="secondary">↓ 按住蹲下</button><button id="sound" class="secondary" aria-pressed="true">音效：開</button><button id="pause" class="secondary">Ⅱ 暫停</button></div>
+<div class="instructions"><article><b>01 / 靈活閃避</b><p>空白鍵 / ↑ 跳躍，可在空中再跳一次。按住 ↓ 蹲下，避開飛鳥。</p></article><article><b>02 / 收集能量</b><p>金幣增加分數；藍色能量球提供一次護盾，抵擋碰撞。</p></article><article><b>03 / 突破極限</b><p>每 500 公尺進化一次，速度逐步增加。P 暫停；最高分會保存在此瀏覽器。</p></article></div>
+<footer>離線可玩 · 無外部套件 · 鍵盤與觸控支援</footer>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d'),W=960,H=420,G=332;
+let best=0;try{best=Number(localStorage.getItem('dinoEvolutionBest'))||0}catch{}$('best').textContent=best;
+let mode='ready',last=0,time=0,distance=0,coins=0,shield=0,spawn=1,items=[],particles=[],invincible=0,duck=false;
+const player={x:115,y:G,vy:0,jumps:0};
+
+// Audio is initialized only after a user gesture; no external files required.
+let audioContext, masterGain, muted=false;
+try{muted=localStorage.getItem('dinoMuted')==='true'}catch{}
+function updateSoundButton(){const b=$('sound');b.textContent=muted?'音效：關':'音效：開';b.setAttribute('aria-pressed',String(!muted))}
+function unlockAudio(){
+  try{
+    const AudioEngine=window.AudioContext||window.webkitAudioContext;
+    if(!AudioEngine)return;
+    if(!audioContext){audioContext=new AudioEngine();masterGain=audioContext.createGain();masterGain.gain.value=muted?0:0.18;masterGain.connect(audioContext.destination)}
+    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
+  }catch{}
+}
+function tone(frequency,endFrequency,duration,delay=0,type='sine'){
+  if(muted||!audioContext||audioContext.state!=='running')return;
+  const start=audioContext.currentTime+delay;
+  const oscillator=audioContext.createOscillator(),envelope=audioContext.createGain();
+  oscillator.type=type;oscillator.frequency.setValueAtTime(frequency,start);
+  oscillator.frequency.exponentialRampToValueAtTime(endFrequency,start+duration);
+  envelope.gain.setValueAtTime(0,start);envelope.gain.linearRampToValueAtTime(0.65,start+0.008);
+  envelope.gain.exponentialRampToValueAtTime(0.001,start+duration);
+  oscillator.connect(envelope);envelope.connect(masterGain);
+  oscillator.onended=()=>{oscillator.disconnect();envelope.disconnect()};
+  oscillator.start(start);oscillator.stop(start+duration+0.02);
+}
+function sound(name){
+  if(name==='jump')tone(260,620,0.15,0,'triangle');
+  if(name==='double')tone(420,950,0.18,0,'triangle');
+  if(name==='coin'){tone(880,880,0.10);tone(1320,1320,0.16,0.09)}
+  if(name==='shield'){tone(330,660,0.22);tone(660,990,0.25,0.12)}
+  if(name==='break')tone(280,65,0.28,0,'sawtooth');
+  if(name==='over'){tone(330,220,0.2,0,'triangle');tone(220,80,0.38,0.18,'triangle')}
+  if(name==='start'||name==='evolve'){[523,659,784,1047].forEach((f,i)=>tone(f,f,0.18,i*0.09,'triangle'))}
+}
+window.addEventListener('pointerdown',unlockAudio,{capture:true});
+window.addEventListener('keydown',unlockAudio,{capture:true});
+$('sound').onclick=()=>{unlockAudio();muted=!muted;if(masterGain)masterGain.gain.setValueAtTime(muted?0:0.18,audioContext.currentTime);try{localStorage.setItem('dinoMuted',String(muted))}catch{}updateSoundButton();if(!muted)sound('coin')};
+updateSoundButton();
+
+const rand=(a,b)=>a+Math.random()*(b-a);
+function overlay(title,message,label){$('title').textContent=title;$('message').textContent=message;$('start').textContent=label;$('overlay').classList.remove('hidden')}
+function start(){unlockAudio();sound('start');mode='playing';time=distance=coins=shield=invincible=0;spawn=1.2;items=[];particles=[];duck=false;Object.assign(player,{y:G,vy:0,jumps:0});$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ 暫停';updateHUD()}
+function jump(){if(mode==='ready'||mode==='over'){start();return}if(mode!=='playing')return;if(player.jumps<2){duck=false;player.vy=player.jumps===0?-650:-550;player.jumps++;sound(player.jumps===1?'jump':'double');burst(player.x+20,player.y,'#baf393',8)}}
+function pause(){if(mode==='playing'){mode='paused';duck=false;overlay('休息一下，冒險還在。','按 P 或點擊繼續','繼續冒險 →');$('pause').textContent='▶ 繼續'}else if(mode==='paused'){mode='playing';$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ 暫停'}}
+function burst(x,y,color,n){for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-160,160),vy:rand(-220,50),life:rand(.25,.7),color})}
+function updateHUD(){const level=Math.floor(distance/500);$('score').textContent=`距離 ${Math.floor(distance)} m · 分數 ${Math.floor(distance)+coins*25}`;$('status').textContent=`${['幼龍','迅猛龍','極光龍'][Math.min(2,level)]} · 金幣 ${coins} · 護盾 ${shield}`}
+function end(){sound('over');mode='over';const score=Math.floor(distance)+coins*25;if(score>best){best=score;try{localStorage.setItem('dinoEvolutionBest',String(best))}catch{}$('best').textContent=best}overlay('再往前一點，就是新紀錄。',`本次 ${Math.floor(distance)} 公尺 · ${coins} 枚金幣 · 總分 ${score}`,'再跑一次 ↻')}
+function box(){const low=duck&&player.y>=G;return{x:player.x+6,y:player.y-(low?27:55),w:low?56:38,h:low?25:51}}
+function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function update(dt){time+=dt;const speed=Math.min(680,310+distance*.075);const oldLevel=Math.min(2,Math.floor(distance/500));distance+=speed*dt/12;if(Math.min(2,Math.floor(distance/500))>oldLevel)sound('evolve');invincible=Math.max(0,invincible-dt);player.vy+=1750*dt;player.y+=player.vy*dt;if(player.y>=G){player.y=G;player.vy=0;player.jumps=0}spawn-=dt;
+if(spawn<=0){const bird=distance>180&&Math.random()<.3;items.push({type:bird?'bird':'cactus',x:W+30,y:bird?G-72:G-48,w:bird?46:29,h:bird?26:48});if(Math.random()<.8)items.push({type:Math.random()<.18?'shield':'coin',x:W+110,y:G-rand(95,160),w:22,h:22});spawn=rand(1.2,1.85)*Math.max(.77,310/speed)}
+const b=box();for(const item of items){item.x-=speed*dt;if(item.hit)continue;if(overlap(b,item)){if(item.type==='coin'||item.type==='shield'){item.hit=true;if(item.type==='coin'){coins++;sound('coin')}else{shield=1;sound('shield')}burst(item.x+11,item.y+11,item.type==='coin'?'#ffdc74':'#83eaff',12)}else if(!invincible){item.hit=true;if(shield){sound('break');shield=0;invincible=1.4;burst(player.x+20,player.y-30,'#83eaff',24)}else{burst(player.x+20,player.y-30,'#baf393',20);end();break}}}}
+items=items.filter(i=>i.x>-80&&!i.hit);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=450*dt}particles=particles.filter(p=>p.life>0);updateHUD()}
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function draw(){const night=Math.floor(distance/500)%2===1;ctx.fillStyle=night?'#111e35':'#15382d';ctx.fillRect(0,0,W,H);ctx.fillStyle=night?'#d6e6ef':'#e5d995';ctx.beginPath();ctx.arc(792,90,30,0,Math.PI*2);ctx.fill();
+for(let layer=0;layer<2;layer++){ctx.fillStyle=layer?'#21483a':'#1c4035';for(let i=-1;i<6;i++){let x=i*250-(distance*(layer+1)*3)%250;ctx.beginPath();ctx.moveTo(x,G);ctx.lineTo(x+125,130+layer*60);ctx.lineTo(x+270,G);ctx.fill()}}
+rect(0,G,W,H-G,'#0f271e');rect(0,G,W,3,'#658b59');for(let i=0;i<25;i++)rect((i*53-distance*12%53),G+20+(i%3)*18,15,2,'#2a4838');
+for(const item of items){const{x,y,w,h,type}=item;if(type==='coin'||type==='shield'){ctx.fillStyle=type==='coin'?'#ffd36a':'#7de5ff';ctx.beginPath();ctx.arc(x+w/2,y+h/2,11,0,Math.PI*2);ctx.fill();ctx.strokeStyle=type==='coin'?'#a6782c':'#e7fcff';ctx.lineWidth=2;ctx.stroke();rect(x+10,y+5,3,12,type==='coin'?'#a6782c':'#fff')}else if(type==='cactus'){rect(x+9,y,13,h,'#8aba78');rect(x,y+15,10,10,'#8aba78');rect(x,y+7,6,18,'#8aba78');rect(x+20,y+23,13,7,'#8aba78');rect(x+27,y+12,6,18,'#8aba78')}else{rect(x,y+9,w,12,'#e6b58e');rect(x+5,y+2,12,15,'#e6b58e');rect(x+8,y+5,3,3,'#172b25');rect(x+23,y+(Math.sin(time*18)>0?-8:17),14,17,'#bc876d')}}
+ctx.save();if(invincible&&Math.floor(time*15)%2)ctx.globalAlpha=.35;const x=player.x,y=player.y,c=['#baf393','#f2d28d','#9de8f5'][Math.min(2,Math.floor(distance/500))],low=duck&&y>=G;
+if(low){rect(x+5,y-25,42,19,c);rect(x+39,y-31,25,17,c);rect(x,y-29,10,15,c);rect(x+55,y-27,4,4,'#15382d')}else{rect(x+7,y-38,28,30,c);rect(x+22,y-60,29,27,c);rect(x+32,y-36,13,7,c);rect(x,y-43,12,23,c);rect(x+42,y-54,4,5,'#15382d');rect(x+31,y-22,14,6,c)}
+const step=player.y<G?0:Math.sin(time*20)*4;rect(x+10,y-10,8,10+step,c);rect(x+27,y-10,8,10-step,c);ctx.restore();
+if(shield){ctx.strokeStyle='#88e9ff';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x+26,y-28,46,48,0,0,Math.PI*2);ctx.stroke()}for(const p of particles){ctx.globalAlpha=Math.min(1,p.life*2);rect(p.x,p.y,5,5,p.color)}ctx.globalAlpha=1;
+}
+function frame(now){const dt=Math.min((now-last)/1000||0,.033);last=now;if(mode==='playing')update(dt);draw();requestAnimationFrame(frame)}
+$('start').onclick=()=>mode==='paused'?pause():start();$('jump').onpointerdown=e=>{e.preventDefault();jump()};canvas.onpointerdown=()=>jump();$('pause').onclick=pause;
+$('duck').onpointerdown=e=>{e.preventDefault();duck=true;$('duck').setPointerCapture(e.pointerId)};for(const event of ['pointerup','pointercancel','lostpointercapture'])$('duck').addEventListener(event,()=>duck=false);
+window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','KeyP'].includes(e.code)){if(e.target.tagName==='BUTTON'&&e.code==='Space')return;e.preventDefault();if(e.code==='ArrowDown')duck=true;else if(!e.repeat){if(e.code==='KeyP')pause();else jump()}}});window.addEventListener('keyup',e=>{if(e.code==='ArrowDown')duck=false});window.addEventListener('blur',()=>{duck=false;if(mode==='playing')pause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='playing')pause()});requestAnimationFrame(frame);
+})();
+</script></body></html>
