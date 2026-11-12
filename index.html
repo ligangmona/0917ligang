@@ -1,95 +1,715 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DINO EVOLUTION・進化小恐龍</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小恐龍：荒野衝刺</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#091713;color:#ecfff5;font-family:system-ui,"Microsoft JhengHei",sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px}main{width:min(1040px,100%)}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}.tag{color:#a5ef80;letter-spacing:4px;font-size:12px}h1{font-size:clamp(28px,5vw,52px);margin:8px 0}p{color:#9db6aa;line-height:1.8}.record{border:1px solid #385347;border-radius:16px;padding:16px;white-space:nowrap}.record strong{display:block;font-size:26px;color:#c3f59e}.game{position:relative;border:1px solid #3c5c4c;border-radius:22px;overflow:hidden;background:#132d24;box-shadow:0 24px 80px #0005}canvas{width:100%;display:block;aspect-ratio:960/420;touch-action:none}.hud{position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;font-weight:700;font-size:14px}.overlay{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#081a13c9;padding:20px}.overlay h2{font-size:clamp(24px,5vw,40px);margin:0 0 8px}.overlay p{margin:4px 0 20px}.hidden{display:none}button{cursor:pointer;color:#0b2517;background:#c0f28e;border:0;border-radius:12px;padding:13px 22px;font:700 15px system-ui;touch-action:manipulation}button:hover{background:#d6ffb0}button:focus-visible{outline:3px solid white;outline-offset:3px}.controls{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}.secondary{background:#20392e;color:#e2f5e9;border:1px solid #3b594a}.instructions{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:28px}.instructions article{border-top:1px solid #375043;padding-top:16px}.instructions b{color:#d4edbf}.instructions p{font-size:14px;margin-top:6px}footer{font-size:12px;color:#769585;margin-top:24px}@media(max-width:600px){body{padding:14px}header{align-items:flex-start}.record{font-size:11px;padding:10px}.record strong{font-size:20px}.hud{font-size:11px;top:10px;left:12px;right:12px}.instructions{grid-template-columns:1fr;gap:8px}canvas{aspect-ratio:960/540}}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#152234;
+  color:white;
+  font-family:Arial,"Microsoft JhengHei",sans-serif;
+}
+.game{
+  width:min(960px,96vw);
+}
+h1{text-align:center;font-size:26px}
+.info{
+  flex-wrap:wrap;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin:12px 0;
+  font-weight:bold;
+}
+canvas{
+  width:100%;
+  display:block;
+  background:#bceaff;
+  border:4px solid #fff;
+  border-radius:15px;
+}
+.controls{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:15px;
+}
+button{
+  padding:14px 22px;
+  border:0;
+  border-radius:12px;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+  background:#ffcf54;
+  color:#222;
+  touch-action:none;
+}
+button:active{transform:scale(.95)}
+.help{
+  text-align:center;
+  color:#c5d3e4;
+  line-height:1.8;
+}
+progress{width:100%;height:10px;accent-color:#b880ff} button:disabled{opacity:.5;cursor:wait}
 </style>
 </head>
-<body><main>
-<header><div><span class="tag">THE NEXT LITTLE ADVENTURE</span><h1>進化吧，小恐龍。</h1><p style="margin:0">跨越荒野，收集能量，把紀錄留在身後。</p></div><div class="record">個人最佳<strong id="best">0</strong></div></header>
-<section class="game" aria-label="小恐龍跑酷遊戲">
-<canvas id="game" width="960" height="420" aria-label="使用空白鍵跳躍、向下鍵蹲下，或使用下方觸控按鈕">你的瀏覽器需要支援 Canvas。</canvas>
-<div class="hud"><span id="score">距離 0 m</span><span id="status">幼龍 · 金幣 0 · 護盾 0</span></div>
-<div id="overlay" class="overlay"><h2 id="title">小小一步，進化開始。</h2><p id="message">二段跳 × 護盾 × 無限荒野<br>按空白鍵或點擊開始</p><button id="start">開始冒險 →</button></div>
-</section>
-<div class="controls"><button id="jump">↑ 跳躍 / 二段跳</button><button id="duck" class="secondary">↓ 按住蹲下</button><button id="sound" class="secondary" aria-pressed="true">音效：開</button><button id="pause" class="secondary">Ⅱ 暫停</button></div>
-<div class="instructions"><article><b>01 / 靈活閃避</b><p>空白鍵 / ↑ 跳躍，可在空中再跳一次。按住 ↓ 蹲下，避開飛鳥。</p></article><article><b>02 / 收集能量</b><p>金幣增加分數；藍色能量球提供一次護盾，抵擋碰撞。</p></article><article><b>03 / 突破極限</b><p>每 500 公尺進化一次，速度逐步增加。P 暫停；最高分會保存在此瀏覽器。</p></article></div>
-<footer>離線可玩 · 無外部套件 · 鍵盤與觸控支援</footer>
-</main>
+<body>
+<div class="game">
+  <h1>🦖 小恐龍：荒野衝刺</h1>
+  <p id="asset-status" class="help" role="status">新版黑紫角色載入中…</p>
+  <progress id="load-progress" max="8" value="0" aria-label="角色圖片載入進度"></progress>
+  <div class="info">
+    <span>分數：<span id="score">0</span></span>
+    <span>金幣：<span id="coins">0</span></span>
+    <span>最高紀錄：<span id="best">0</span></span>
+    <span>盾牌：<span id="shield">準備完成</span></span>
+    <span id="power-status">道具：尚未啟用</span>
+    <span id="scene-status">場景：晨光草原</span>
+  </div>
+
+  <canvas id="canvas" width="900" height="400"></canvas>
+
+  <div class="controls">
+    <button id="start" disabled>開始 / 重玩</button>
+    <button id="jump">跳躍</button>
+    <button id="duck">蹲下</button>
+    <button id="defend">盾牌</button>
+    <button id="pause">暫停</button>
+    <button id="mute" aria-pressed="false">音效：開</button>
+  </div>
+
+  <p class="help">
+    空白鍵 / ↑：跳躍、二段跳　
+    ↓：蹲下　
+    Shift：盾牌　
+    P：暫停　M：靜音<br>
+    🧲 磁鐵自動吸金幣 8 秒　★ 無敵 5 秒　每 200 分切換場景
+  </p>
+</div>
+
 <script>
-(()=>{'use strict';
-const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d'),W=960,H=420,G=332;
-let best=0;try{best=Number(localStorage.getItem('dinoEvolutionBest'))||0}catch{}$('best').textContent=best;
-let mode='ready',last=0,time=0,distance=0,coins=0,shield=0,spawn=1,items=[],particles=[],invincible=0,duck=false;
-const player={x:115,y:G,vy:0,jumps:0};
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
 
-// Audio is initialized only after a user gesture; no external files required.
-let audioContext, masterGain, muted=false;
-try{muted=localStorage.getItem('dinoMuted')==='true'}catch{}
-function updateSoundButton(){const b=$('sound');b.textContent=muted?'音效：關':'音效：開';b.setAttribute('aria-pressed',String(!muted))}
+const W=canvas.width;
+const H=canvas.height;
+const ground=335;
+
+// Keep the supplied artwork intact; prepare transparent sprites at load time.
+const spriteFiles=Object.fromEntries(["idle","run","jump","duck","shield","hurt","dead","attack"].map(state=>[state,"assets/"+state+".png"]));
+const sprites={};
+let impactUntil=0;
+let endedAt=0;
+
+function prepareSprite(img){
+  const surface=document.createElement("canvas");
+  surface.width=img.naturalWidth;
+  surface.height=img.naturalHeight;
+  const paint=surface.getContext("2d");
+  paint.drawImage(img,0,0);
+  const pixels=paint.getImageData(0,0,surface.width,surface.height);
+  const data=pixels.data;
+  const count=surface.width*surface.height;
+  const seen=new Uint8Array(count);
+  const queue=new Int32Array(count);
+  let head=0,tail=0;
+  function visit(i){
+    if(i<0||i>=count||seen[i])return;
+    seen[i]=1;
+    const p=i*4;
+    const lo=Math.min(data[p],data[p+1],data[p+2]);
+    const hi=Math.max(data[p],data[p+1],data[p+2]);
+    if(lo>220&&hi-lo<30){queue[tail++]=i;data[p+3]=0;}
+  }
+  for(let x=0;x<surface.width;x++){
+    visit(x);visit(count-surface.width+x);
+  }
+  for(let y=0;y<surface.height;y++){
+    visit(y*surface.width);visit(y*surface.width+surface.width-1);
+  }
+  while(head<tail){
+    const i=queue[head++],x=i%surface.width;
+    if(x>0)visit(i-1);
+    if(x<surface.width-1)visit(i+1);
+    visit(i-surface.width);visit(i+surface.width);
+  }
+  paint.putImageData(pixels,0,0);
+  return surface;
+}
+
+const assetStatus=document.getElementById("asset-status");
+let loadedAssets=0,failedAssets=0;
+function assetProgress(){
+  document.getElementById("load-progress").value=loadedAssets+failedAssets;
+  assetStatus.textContent=`角色載入 ${loadedAssets}/8${failedAssets?" · 部分圖片失敗，重新整理可重試":""}`;
+  document.getElementById("start").disabled=!sprites.idle;
+}
+function loadSprite(state){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.fetchPriority=state==="idle"?"high":"low";
+    img.onload=()=>{
+      sprites[state]=img;
+      try{sprites[state]=prepareSprite(img);}catch{}
+      loadedAssets++;assetProgress();
+      resolve();
+    };
+    img.onerror=()=>{
+      failedAssets++;assetProgress();
+      resolve();
+    };
+    img.src=new URL(spriteFiles[state]+"?v=3",document.baseURI).href;
+  });
+}
+loadSprite("idle").then(()=>{
+  for(const state of Object.keys(spriteFiles)){
+    if(state!=="idle")loadSprite(state);
+  }
+});
+
+const scoreText=document.getElementById("score");
+const coinsText=document.getElementById("coins");
+const bestText=document.getElementById("best");
+const shieldText=document.getElementById("shield");
+
+let score=0;
+let coins=0;
+let best=Number(localStorage.getItem("dinoBest")||0);
+let speed=6;
+let running=false;
+let paused=false;
+let gameOver=false;
+let obstacles=[];
+let golds=[];
+let particles=[];
+let spawnTimer=0;
+let coinTimer=0;
+let lastTime=0;
+let shieldCooldown=0;
+let shieldTime=0;
+let powerups=[],powerTimer=240,magnetTime=0,invincibleTime=0;
+let muted=localStorage.getItem("dinoMuted")==="1",audio;
+const muteButton=document.getElementById("mute");
+function syncMute(){muteButton.textContent=muted?"音效：關":"音效：開";muteButton.setAttribute("aria-pressed",String(muted));}
+syncMute();
 function unlockAudio(){
-  try{
-    const AudioEngine=window.AudioContext||window.webkitAudioContext;
-    if(!AudioEngine)return;
-    if(!audioContext){audioContext=new AudioEngine();masterGain=audioContext.createGain();masterGain.gain.value=muted?0:0.18;masterGain.connect(audioContext.destination)}
-    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
-  }catch{}
+  try{const Audio=window.AudioContext||window.webkitAudioContext;if(!audio&&Audio)audio=new Audio();if(audio?.state==="suspended")audio.resume().catch(()=>{});}catch{}
 }
-function tone(frequency,endFrequency,duration,delay=0,type='sine'){
-  if(muted||!audioContext||audioContext.state!=='running')return;
-  const start=audioContext.currentTime+delay;
-  const oscillator=audioContext.createOscillator(),envelope=audioContext.createGain();
-  oscillator.type=type;oscillator.frequency.setValueAtTime(frequency,start);
-  oscillator.frequency.exponentialRampToValueAtTime(endFrequency,start+duration);
-  envelope.gain.setValueAtTime(0,start);envelope.gain.linearRampToValueAtTime(0.65,start+0.008);
-  envelope.gain.exponentialRampToValueAtTime(0.001,start+duration);
-  oscillator.connect(envelope);envelope.connect(masterGain);
-  oscillator.onended=()=>{oscillator.disconnect();envelope.disconnect()};
-  oscillator.start(start);oscillator.stop(start+duration+0.02);
+function sound(kind){
+  if(muted||!audio||audio.state!=="running")return;
+  const notes={jump:[380,650,.12],coin:[880,1320,.1],hit:[160,45,.22],power:[520,1040,.22],shield:[240,740,.18]};
+  const [from,to,duration]=notes[kind];
+  const oscillator=audio.createOscillator(),gain=audio.createGain(),t=audio.currentTime;
+  oscillator.type=kind==="hit"?"sawtooth":"sine";
+  oscillator.frequency.setValueAtTime(from,t);oscillator.frequency.exponentialRampToValueAtTime(to,t+duration);
+  gain.gain.setValueAtTime(.07,t);gain.gain.exponentialRampToValueAtTime(.001,t+duration);
+  oscillator.connect(gain);gain.connect(audio.destination);oscillator.start(t);oscillator.stop(t+duration);
 }
-function sound(name){
-  if(name==='jump')tone(260,620,0.15,0,'triangle');
-  if(name==='double')tone(420,950,0.18,0,'triangle');
-  if(name==='coin'){tone(880,880,0.10);tone(1320,1320,0.16,0.09)}
-  if(name==='shield'){tone(330,660,0.22);tone(660,990,0.25,0.12)}
-  if(name==='break')tone(280,65,0.28,0,'sawtooth');
-  if(name==='over'){tone(330,220,0.2,0,'triangle');tone(220,80,0.38,0.18,'triangle')}
-  if(name==='start'||name==='evolve'){[523,659,784,1047].forEach((f,i)=>tone(f,f,0.18,i*0.09,'triangle'))}
-}
-window.addEventListener('pointerdown',unlockAudio,{capture:true});
-window.addEventListener('keydown',unlockAudio,{capture:true});
-$('sound').onclick=()=>{unlockAudio();muted=!muted;if(masterGain)masterGain.gain.setValueAtTime(muted?0:0.18,audioContext.currentTime);try{localStorage.setItem('dinoMuted',String(muted))}catch{}updateSoundButton();if(!muted)sound('coin')};
-updateSoundButton();
+muteButton.onclick=()=>{muted=!muted;localStorage.setItem("dinoMuted",muted?"1":"0");syncMute();unlockAudio();};
+const scenes=[
+  {name:"晨光草原",sky:["#94d7ff","#e0f7ff"],mountain:"#a4d6ac",grass:"#78bc63",edge:"#478d46",sun:"#ffe16b"},
+  {name:"落日沙丘",sky:["#df8ab7","#ffddb1"],mountain:"#c48f92",grass:"#d9ac72",edge:"#a57554",sun:"#ffb46b"},
+  {name:"星夜秘境",sky:["#161e4b","#625080"],mountain:"#494c79",grass:"#575c83",edge:"#343c62",sun:"#eee6ff"}
+];
+function currentScene(){return scenes[Math.floor(score/200)%scenes.length];}
+function playerBox(){return {x:dino.x+5,y:dino.y+(dino.duck?8:22),w:dino.w-10,h:dino.h-(dino.duck?10:24)};}
 
-const rand=(a,b)=>a+Math.random()*(b-a);
-function overlay(title,message,label){$('title').textContent=title;$('message').textContent=message;$('start').textContent=label;$('overlay').classList.remove('hidden')}
-function start(){unlockAudio();sound('start');mode='playing';time=distance=coins=shield=invincible=0;spawn=1.2;items=[];particles=[];duck=false;Object.assign(player,{y:G,vy:0,jumps:0});$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ 暫停';updateHUD()}
-function jump(){if(mode==='ready'||mode==='over'){start();return}if(mode!=='playing')return;if(player.jumps<2){duck=false;player.vy=player.jumps===0?-650:-550;player.jumps++;sound(player.jumps===1?'jump':'double');burst(player.x+20,player.y,'#baf393',8)}}
-function pause(){if(mode==='playing'){mode='paused';duck=false;overlay('休息一下，冒險還在。','按 P 或點擊繼續','繼續冒險 →');$('pause').textContent='▶ 繼續'}else if(mode==='paused'){mode='playing';$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ 暫停'}}
-function burst(x,y,color,n){for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-160,160),vy:rand(-220,50),life:rand(.25,.7),color})}
-function updateHUD(){const level=Math.floor(distance/500);$('score').textContent=`距離 ${Math.floor(distance)} m · 分數 ${Math.floor(distance)+coins*25}`;$('status').textContent=`${['幼龍','迅猛龍','極光龍'][Math.min(2,level)]} · 金幣 ${coins} · 護盾 ${shield}`}
-function end(){sound('over');mode='over';const score=Math.floor(distance)+coins*25;if(score>best){best=score;try{localStorage.setItem('dinoEvolutionBest',String(best))}catch{}$('best').textContent=best}overlay('再往前一點，就是新紀錄。',`本次 ${Math.floor(distance)} 公尺 · ${coins} 枚金幣 · 總分 ${score}`,'再跑一次 ↻')}
-function box(){const low=duck&&player.y>=G;return{x:player.x+6,y:player.y-(low?27:55),w:low?56:38,h:low?25:51}}
-function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
-function update(dt){time+=dt;const speed=Math.min(680,310+distance*.075);const oldLevel=Math.min(2,Math.floor(distance/500));distance+=speed*dt/12;if(Math.min(2,Math.floor(distance/500))>oldLevel)sound('evolve');invincible=Math.max(0,invincible-dt);player.vy+=1750*dt;player.y+=player.vy*dt;if(player.y>=G){player.y=G;player.vy=0;player.jumps=0}spawn-=dt;
-if(spawn<=0){const bird=distance>180&&Math.random()<.3;items.push({type:bird?'bird':'cactus',x:W+30,y:bird?G-72:G-48,w:bird?46:29,h:bird?26:48});if(Math.random()<.8)items.push({type:Math.random()<.18?'shield':'coin',x:W+110,y:G-rand(95,160),w:22,h:22});spawn=rand(1.2,1.85)*Math.max(.77,310/speed)}
-const b=box();for(const item of items){item.x-=speed*dt;if(item.hit)continue;if(overlap(b,item)){if(item.type==='coin'||item.type==='shield'){item.hit=true;if(item.type==='coin'){coins++;sound('coin')}else{shield=1;sound('shield')}burst(item.x+11,item.y+11,item.type==='coin'?'#ffdc74':'#83eaff',12)}else if(!invincible){item.hit=true;if(shield){sound('break');shield=0;invincible=1.4;burst(player.x+20,player.y-30,'#83eaff',24)}else{burst(player.x+20,player.y-30,'#baf393',20);end();break}}}}
-items=items.filter(i=>i.x>-80&&!i.hit);for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=450*dt}particles=particles.filter(p=>p.life>0);updateHUD()}
-function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
-function draw(){const night=Math.floor(distance/500)%2===1;ctx.fillStyle=night?'#111e35':'#15382d';ctx.fillRect(0,0,W,H);ctx.fillStyle=night?'#d6e6ef':'#e5d995';ctx.beginPath();ctx.arc(792,90,30,0,Math.PI*2);ctx.fill();
-for(let layer=0;layer<2;layer++){ctx.fillStyle=layer?'#21483a':'#1c4035';for(let i=-1;i<6;i++){let x=i*250-(distance*(layer+1)*3)%250;ctx.beginPath();ctx.moveTo(x,G);ctx.lineTo(x+125,130+layer*60);ctx.lineTo(x+270,G);ctx.fill()}}
-rect(0,G,W,H-G,'#0f271e');rect(0,G,W,3,'#658b59');for(let i=0;i<25;i++)rect((i*53-distance*12%53),G+20+(i%3)*18,15,2,'#2a4838');
-for(const item of items){const{x,y,w,h,type}=item;if(type==='coin'||type==='shield'){ctx.fillStyle=type==='coin'?'#ffd36a':'#7de5ff';ctx.beginPath();ctx.arc(x+w/2,y+h/2,11,0,Math.PI*2);ctx.fill();ctx.strokeStyle=type==='coin'?'#a6782c':'#e7fcff';ctx.lineWidth=2;ctx.stroke();rect(x+10,y+5,3,12,type==='coin'?'#a6782c':'#fff')}else if(type==='cactus'){rect(x+9,y,13,h,'#8aba78');rect(x,y+15,10,10,'#8aba78');rect(x,y+7,6,18,'#8aba78');rect(x+20,y+23,13,7,'#8aba78');rect(x+27,y+12,6,18,'#8aba78')}else{rect(x,y+9,w,12,'#e6b58e');rect(x+5,y+2,12,15,'#e6b58e');rect(x+8,y+5,3,3,'#172b25');rect(x+23,y+(Math.sin(time*18)>0?-8:17),14,17,'#bc876d')}}
-ctx.save();if(invincible&&Math.floor(time*15)%2)ctx.globalAlpha=.35;const x=player.x,y=player.y,c=['#baf393','#f2d28d','#9de8f5'][Math.min(2,Math.floor(distance/500))],low=duck&&y>=G;
-if(low){rect(x+5,y-25,42,19,c);rect(x+39,y-31,25,17,c);rect(x,y-29,10,15,c);rect(x+55,y-27,4,4,'#15382d')}else{rect(x+7,y-38,28,30,c);rect(x+22,y-60,29,27,c);rect(x+32,y-36,13,7,c);rect(x,y-43,12,23,c);rect(x+42,y-54,4,5,'#15382d');rect(x+31,y-22,14,6,c)}
-const step=player.y<G?0:Math.sin(time*20)*4;rect(x+10,y-10,8,10+step,c);rect(x+27,y-10,8,10-step,c);ctx.restore();
-if(shield){ctx.strokeStyle='#88e9ff';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x+26,y-28,46,48,0,0,Math.PI*2);ctx.stroke()}for(const p of particles){ctx.globalAlpha=Math.min(1,p.life*2);rect(p.x,p.y,5,5,p.color)}ctx.globalAlpha=1;
+
+bestText.textContent=best;
+
+const dino={
+  x:110,
+  y:ground-58,
+  w:48,
+  h:58,
+  vy:0,
+  jumps:0,
+  duck:false
+};
+
+function reset(){
+  if(!sprites.idle)return;
+  unlockAudio();
+  powerups=[];powerTimer=240;magnetTime=0;invincibleTime=0;
+  dino.h=58;
+  impactUntil=0;
+  score=0;
+  coins=0;
+  speed=6;
+  obstacles=[];
+  golds=[];
+  particles=[];
+  spawnTimer=55;
+  coinTimer=80;
+  shieldCooldown=0;
+  shieldTime=0;
+  dino.y=ground-dino.h;
+  dino.vy=0;
+  dino.jumps=0;
+  dino.duck=false;
+  running=true;
+  paused=false;
+  gameOver=false;
+  lastTime=performance.now();
+  updateUI();
 }
-function frame(now){const dt=Math.min((now-last)/1000||0,.033);last=now;if(mode==='playing')update(dt);draw();requestAnimationFrame(frame)}
-$('start').onclick=()=>mode==='paused'?pause():start();$('jump').onpointerdown=e=>{e.preventDefault();jump()};canvas.onpointerdown=()=>jump();$('pause').onclick=pause;
-$('duck').onpointerdown=e=>{e.preventDefault();duck=true;$('duck').setPointerCapture(e.pointerId)};for(const event of ['pointerup','pointercancel','lostpointercapture'])$('duck').addEventListener(event,()=>duck=false);
-window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','KeyP'].includes(e.code)){if(e.target.tagName==='BUTTON'&&e.code==='Space')return;e.preventDefault();if(e.code==='ArrowDown')duck=true;else if(!e.repeat){if(e.code==='KeyP')pause();else jump()}}});window.addEventListener('keyup',e=>{if(e.code==='ArrowDown')duck=false});window.addEventListener('blur',()=>{duck=false;if(mode==='playing')pause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='playing')pause()});requestAnimationFrame(frame);
-})();
-</script></body></html>
+
+function jump(){
+  if(!running||paused)return;
+  if(dino.jumps<2){
+    dino.vy=dino.jumps===0?-14:-12;
+    dino.jumps++;
+    sound("jump");
+    dino.duck=false;
+  }
+}
+
+function shield(){
+  if(!running||paused)return;
+  if(shieldCooldown<=0){
+    sound("shield");
+    shieldTime=120;
+    shieldCooldown=420;
+  }
+}
+
+function updateUI(){
+  document.getElementById("scene-status").textContent="場景："+currentScene().name;
+  document.getElementById("power-status").textContent=[magnetTime>0?"🧲 "+Math.ceil(magnetTime/60)+" 秒":"",invincibleTime>0?"★ "+Math.ceil(invincibleTime/60)+" 秒":""].filter(Boolean).join(" · ")||"道具：尚未啟用";
+  scoreText.textContent=Math.floor(score);
+  coinsText.textContent=coins;
+  bestText.textContent=best;
+  shieldText.textContent=
+    shieldTime>0?"防禦中":
+    shieldCooldown>0?
+    Math.ceil(shieldCooldown/60)+" 秒":
+    "準備完成";
+}
+
+function spawnObstacle(){
+  const r=Math.random();
+  let type,w,h,y;
+
+  if(r<.35){
+    type="cactus";
+    w=36;
+    h=65;
+    y=ground-h;
+  }else if(r<.65){
+    type="rock";
+    w=46;
+    h=35;
+    y=ground-h;
+  }else if(r<.85){
+    type="wood";
+    w=33;
+    h=48;
+    y=ground-h;
+  }else{
+    type="bird";
+    w=48;
+    h=30;
+    y=ground-100;
+  }
+
+  obstacles.push({x:W+30,y,w,h,type});
+}
+
+function spawnCoin(){
+  golds.push({
+    x:W+20,
+    y:ground-70-Math.random()*95,
+    r:12
+  });
+}
+
+function hit(a,b){
+  return a.x<b.x+b.w &&
+         a.x+a.w>b.x &&
+         a.y<b.y+b.h &&
+         a.y+a.h>b.y;
+}
+
+function addParticles(x,y,color,count){
+  for(let i=0;i<count;i++){
+    particles.push({
+      x,y,
+      vx:(Math.random()-.5)*8,
+      vy:(Math.random()-.5)*8,
+      life:35,
+      color
+    });
+  }
+}
+
+function endGame(){
+  sound("hit");
+  endedAt=performance.now();
+  running=false;
+  gameOver=true;
+  if(Math.floor(score)>best){
+    best=Math.floor(score);
+    localStorage.setItem("dinoBest",best);
+  }
+  updateUI();
+}
+
+function update(dt){
+  if(!running||paused)return;
+
+  const step=Math.min(dt/16.6667,2);
+  score+=.16*step;
+  speed=Math.min(14,6+score/180);
+
+  magnetTime=Math.max(0,magnetTime-step);
+  invincibleTime=Math.max(0,invincibleTime-step);
+  powerTimer-=step;
+  if(powerTimer<=0){powerups.push({x:W+30,y:ground-55-Math.random()*55,type:Math.random()<.5?"magnet":"invincible",w:30,h:30});powerTimer=480+Math.random()*240;}
+  shieldCooldown=Math.max(0,shieldCooldown-step);
+  shieldTime=Math.max(0,shieldTime-step);
+
+  const height=dino.duck?34:58;
+  const bottom=dino.y+dino.h;
+  dino.h=height;
+
+  if(dino.jumps===0){
+    dino.y=ground-height;
+  }else{
+    dino.y=bottom-height;
+  }
+
+  dino.vy+=.7*step;
+  dino.y+=dino.vy*step;
+
+  if(dino.y+dino.h>=ground){
+    dino.y=ground-dino.h;
+    dino.vy=0;
+    dino.jumps=0;
+  }
+
+  spawnTimer-=step;
+  if(spawnTimer<=0){
+    spawnObstacle();
+    spawnTimer=(65+Math.random()*55)*(6/speed);
+    spawnTimer=Math.max(33,spawnTimer);
+  }
+
+  coinTimer-=step;
+  if(coinTimer<=0){
+    spawnCoin();
+    coinTimer=65+Math.random()*75;
+  }
+
+  const player=playerBox();
+
+  for(let i=obstacles.length-1;i>=0;i--){
+    const o=obstacles[i];
+    o.x-=speed*step;
+
+    if(o.x+o.w<0){
+      obstacles.splice(i,1);
+      continue;
+    }
+
+    if(hit(player,o)){
+      if(shieldTime>0||invincibleTime>0){
+        sound("shield");
+        impactUntil=performance.now()+300;
+        addParticles(o.x,o.y,"#65dfff",18);
+        obstacles.splice(i,1);
+        shieldTime=0;
+      }else{
+        addParticles(dino.x,dino.y,"#ff5555",25);
+        endGame();
+        return;
+      }
+    }
+  }
+
+  for(let i=golds.length-1;i>=0;i--){
+    const c=golds[i];
+    c.x-=speed*step;
+
+    if(c.x+c.r<0){
+      golds.splice(i,1);
+      continue;
+    }
+
+    if(magnetTime>0){
+      const dx=player.x+player.w/2-c.x,dy=player.y+player.h/2-c.y;
+      const distance=Math.hypot(dx,dy);
+      if(distance<240&&distance>0){const pull=Math.min(distance,14*step);c.x+=dx/distance*pull;c.y+=dy/distance*pull;}
+    }
+    const box={
+      x:c.x-c.r,
+      y:c.y-c.r,
+      w:c.r*2,
+      h:c.r*2
+    };
+
+    if(hit(player,box)){
+      sound("coin");
+      coins++;
+      score+=10;
+      addParticles(c.x,c.y,"#ffd447",12);
+      golds.splice(i,1);
+    }
+  }
+
+  if(!running)return;
+  for(let i=powerups.length-1;i>=0;i--){
+    const p=powerups[i];p.x-=speed*step;
+    if(p.x+p.w<0){powerups.splice(i,1);continue;}
+    if(hit(player,p)){
+      if(p.type==="magnet")magnetTime=480;else invincibleTime=300;
+      sound("power");addParticles(p.x+15,p.y+15,p.type==="magnet"?"#ff84c8":"#ffe778",18);
+      powerups.splice(i,1);
+    }
+  }
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*step;
+    p.y+=p.vy*step;
+    p.vy+=.16*step;
+    p.life-=step;
+    if(p.life<=0)particles.splice(i,1);
+  }
+
+  updateUI();
+}
+
+function drawDino(){
+  const now=performance.now();
+  const state=gameOver?(now-endedAt<450?"hurt":"dead"):
+    now<impactUntil?"attack":shieldTime>0?"shield":
+    dino.duck?"duck":dino.jumps>0?"jump":running?"run":"idle";
+  const sprite=sprites[state]||sprites.idle;
+  if(sprite){
+    // Anchors are measured at the character's feet; effects and shadows do not move the body.
+    const anchors={idle:[530,1050],run:[500,977],jump:[570,820],duck:[520,950],shield:[650,1030],hurt:[570,940],dead:[540,995],attack:[700,930]};
+    const pose=sprites[state]?state:"idle";
+    const [cx,foot]=anchors[pose];
+    const size=86;
+    ctx.save();
+    ctx.translate(dino.x+dino.w/2,dino.y+dino.h);
+    if(pose!=="attack")ctx.scale(-1,1);
+    ctx.drawImage(sprite,-cx/1254*size,-foot/1254*size,size,size);
+    ctx.restore();
+    if(magnetTime>0||invincibleTime>0||shieldTime>0){
+      ctx.save();ctx.strokeStyle=invincibleTime>0?"#ffe778":magnetTime>0?"#ff84c8":"#65dfff";ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(dino.x+24,dino.y+dino.h/2,43,dino.h/2+12,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+    return;
+  }
+  ctx.save();
+  ctx.fillStyle="#574281";
+  ctx.font="14px sans-serif";
+  ctx.textAlign="center";
+  ctx.fillText("角色載入中…",dino.x+24,ground-25);
+  ctx.restore();
+}
+
+function drawObstacle(o){
+  if(o.type==="cactus"){
+    ctx.fillStyle="#228b4e";
+    ctx.fillRect(o.x+12,o.y,15,o.h);
+    ctx.fillRect(o.x,o.y+22,12,12);
+    ctx.fillRect(o.x,o.y+12,7,22);
+    ctx.fillRect(o.x+27,o.y+33,10,11);
+  }else if(o.type==="rock"){
+    ctx.fillStyle="#7c8493";
+    ctx.beginPath();
+    ctx.moveTo(o.x,o.y+o.h);
+    ctx.lineTo(o.x+8,o.y+10);
+    ctx.lineTo(o.x+25,o.y);
+    ctx.lineTo(o.x+o.w,o.y+o.h);
+    ctx.fill();
+  }else if(o.type==="wood"){
+    ctx.fillStyle="#99612e";
+    ctx.fillRect(o.x,o.y,o.w,o.h);
+    ctx.fillStyle="#c38a4a";
+    ctx.fillRect(o.x+8,o.y,5,o.h);
+  }else{
+    ctx.fillStyle="#7353aa";
+    ctx.beginPath();
+    ctx.ellipse(o.x+25,o.y+15,23,11,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(o.x+20,o.y+15);
+    ctx.lineTo(o.x+3,o.y-8);
+    ctx.lineTo(o.x+34,o.y+10);
+    ctx.fill();
+
+    ctx.fillStyle="white";
+    ctx.fillRect(o.x+38,o.y+9,4,4);
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  const scene=currentScene();
+  // 天空
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,scene.sky[0]);
+  sky.addColorStop(1,scene.sky[1]);
+  ctx.fillStyle=sky;
+  ctx.fillRect(0,0,W,H);
+
+  // 太陽
+  ctx.fillStyle=scene.sun;
+  ctx.beginPath();
+  ctx.arc(750,70,34,0,Math.PI*2);
+  ctx.fill();
+
+  // 遠山
+  ctx.fillStyle=scene.mountain;
+  for(let x=-100;x<W+200;x+=210){
+    ctx.beginPath();
+    ctx.moveTo(x,ground);
+    ctx.lineTo(x+105,170);
+    ctx.lineTo(x+210,ground);
+    ctx.fill();
+  }
+
+  // 草地
+  ctx.fillStyle=scene.grass;
+  ctx.fillRect(0,ground,W,H-ground);
+  ctx.fillStyle=scene.edge;
+  ctx.fillRect(0,ground,W,6);
+
+  // 地面線條
+  ctx.fillStyle=scene.edge;
+  for(let x=0;x<W;x+=45){
+    const offset=running?(score*5)%45:0;
+    ctx.fillRect(x-offset,ground+30,20,4);
+  }
+
+  for(const c of golds){
+    ctx.fillStyle="#ffc928";
+    ctx.beginPath();
+    ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle="#ed9c16";
+    ctx.lineWidth=3;
+    ctx.stroke();
+    ctx.fillStyle="#fff4a4";
+    ctx.font="bold 17px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("$",c.x,c.y+6);
+  }
+
+  if(scene===scenes[2]){
+    ctx.fillStyle="#fff8d9";for(let i=0;i<30;i++){ctx.fillRect((i*137+17)%W,20+(i*61)%170,2,2);}
+  }
+  for(const p of powerups){
+    ctx.fillStyle=p.type==="magnet"?"#9e437b":"#b58926";ctx.beginPath();ctx.arc(p.x+15,p.y+15,19,0,Math.PI*2);ctx.fill();
+    ctx.font="24px sans-serif";ctx.textAlign="center";ctx.fillStyle="white";ctx.fillText(p.type==="magnet"?"🧲":"★",p.x+15,p.y+24);
+  }
+  for(const o of obstacles)drawObstacle(o);
+  drawDino();
+
+  for(const p of particles){
+    ctx.globalAlpha=Math.max(0,p.life/35);
+    ctx.fillStyle=p.color;
+    ctx.fillRect(p.x,p.y,5,5);
+  }
+  ctx.globalAlpha=1;
+
+  if(!running||paused){
+    ctx.fillStyle="rgba(0,0,0,.48)";
+    ctx.fillRect(0,0,W,H);
+
+    ctx.textAlign="center";
+    ctx.fillStyle="white";
+    ctx.font="bold 43px Arial";
+
+    const msg=paused?"遊戲暫停":
+      gameOver?"遊戲結束":"小恐龍：荒野衝刺";
+
+    ctx.fillText(msg,W/2,170);
+
+    ctx.font="22px Arial";
+    ctx.fillText(
+      paused?"按 P 繼續":
+      "按「開始 / 重玩」開始冒險",
+      W/2,215
+    );
+  }
+}
+
+function loop(t){
+  const dt=lastTime?t-lastTime:16.67;
+  lastTime=t;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById("start").onclick=reset;
+document.getElementById("jump").onclick=jump;
+document.getElementById("defend").onclick=shield;
+
+function togglePause(){
+  if(running)paused=!paused;
+}
+
+document.getElementById("pause").onclick=togglePause;
+
+const duckButton=document.getElementById("duck");
+
+duckButton.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  dino.duck=true;
+});
+
+function stopDuck(){
+  dino.duck=false;
+}
+duckButton.addEventListener("pointerup",stopDuck);
+duckButton.addEventListener("pointercancel",stopDuck);
+duckButton.addEventListener("pointerleave",stopDuck);
+
+const keys=new Set();
+
+document.addEventListener("keydown",e=>{
+  if(["Space","ArrowUp","ArrowDown","ShiftLeft","ShiftRight"].includes(e.code)){
+    e.preventDefault();
+  }
+
+  if(keys.has(e.code))return;
+  keys.add(e.code);
+
+  if(e.code==="Space"||e.code==="ArrowUp")jump();
+  if(e.code==="ArrowDown")dino.duck=true;
+  if(e.code==="ShiftLeft"||e.code==="ShiftRight")shield();
+  if(e.code==="KeyP")togglePause();
+  if(e.code==="KeyM")muteButton.click();
+  if(e.code==="Enter"&&!running)reset();
+});
+
+document.addEventListener("keyup",e=>{
+  keys.delete(e.code);
+  if(e.code==="ArrowDown")dino.duck=false;
+});
+
+window.addEventListener("blur",()=>{
+  keys.clear();
+  dino.duck=false;
+  if(running)paused=true;
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
